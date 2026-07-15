@@ -72,3 +72,15 @@ bool rosakasa_engine_tick(RosakasaEngine *engine)
 
     return rosakasa_display_poll(engine->display) && rosakasa_display_present(engine->display);
 }
+
+/**
+ * Expose the display framebuffer without exposing engine internals.
+ */
+RosakasaFramebuffer *rosakasa_engine_framebuffer(RosakasaEngine *engine)
+{
+    if (engine == NULL) {
+        return NULL;
+    }
+
+    return rosakasa_display_framebuffer(engine->display);
+}

@@ -2,7 +2,7 @@
 
 build:
 	cmake -S . -B build
-	cmake --build build --target rosakasa_pc
+	cmake --build build --target rosakasa_demo
 
 run: build
-	./build/rosakasa_pc
+	./build/rosakasa_demo

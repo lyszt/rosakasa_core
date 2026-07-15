@@ -9,7 +9,7 @@ set(CMAKE_C_EXTENSIONS OFF)
 option(ROSAKASA_FETCH_SDL2 "Download SDL2 with FetchContent when SDL2 is not installed locally" ON)
 
 add_library(rosakasa_display
-    src/platform/sdl/sdl_display.c
+    src/engine/display/sdl_display.c
 )
 
 add_library(rosakasa::display ALIAS rosakasa_display)
@@ -26,7 +26,6 @@ target_compile_definitions(rosakasa_display
 
 add_library(rosakasa_engine
     src/engine/engine.c
-    main.c
 )
 
 target_include_directories(rosakasa_engine
@@ -39,77 +38,64 @@ target_link_libraries(rosakasa_engine
         rosakasa::display
 )
 
-add_executable(rosakasa_pc
-    src/host/pc_main.c
+add_library(rosakasa_cartridge
+    src/cartridge/cartridge.c
+    src/cartridge/rendering.c
 )
 
-target_include_directories(rosakasa_pc
+target_include_directories(rosakasa_cartridge
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+add_executable(rosakasa_demo
+    src/demo/main.c
+)
+
+target_include_directories(rosakasa_demo
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(rosakasa_pc
+target_link_libraries(rosakasa_demo
     PRIVATE
         rosakasa_engine
+        rosakasa_cartridge
         rosakasa::display
 )
 
-if(EMSCRIPTEN)
-    target_compile_definitions(rosakasa_display
-        PUBLIC
-            ROSAKASA_PLATFORM_WASM=1
-    )
+find_package(SDL2 QUIET CONFIG)
 
-    target_compile_options(rosakasa_display
-        PUBLIC
-            "SHELL:-sUSE_SDL=2"
-    )
-
-    target_link_options(rosakasa_display
-        PUBLIC
-            "SHELL:-sUSE_SDL=2"
-            "SHELL:-sALLOW_MEMORY_GROWTH=1"
-    )
-
-    target_compile_definitions(rosakasa_engine
-        PRIVATE
-            ROSAKASA_PLATFORM_WASM=1
-    )
-
+if(TARGET SDL2::SDL2)
+    target_link_libraries(rosakasa_display PUBLIC SDL2::SDL2)
+elseif(TARGET SDL2::SDL2-static)
+    target_link_libraries(rosakasa_display PUBLIC SDL2::SDL2-static)
 else()
-    find_package(SDL2 QUIET CONFIG)
+    find_package(PkgConfig QUIET)
 
-    if(TARGET SDL2::SDL2)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(SDL2 QUIET IMPORTED_TARGET sdl2)
+    endif()
+
+    if(TARGET PkgConfig::SDL2)
+        target_link_libraries(rosakasa_display PUBLIC PkgConfig::SDL2)
+    elseif(ROSAKASA_FETCH_SDL2)
+        include(FetchContent)
+
+        FetchContent_Declare(
+            SDL2
+            GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+            GIT_TAG release-2.32.8
+        )
+
+        set(SDL_SHARED ON CACHE BOOL "" FORCE)
+        set(SDL_STATIC OFF CACHE BOOL "" FORCE)
+        set(SDL_TEST OFF CACHE BOOL "" FORCE)
+
+        FetchContent_MakeAvailable(SDL2)
+
         target_link_libraries(rosakasa_display PUBLIC SDL2::SDL2)
-    elseif(TARGET SDL2::SDL2-static)
-        target_link_libraries(rosakasa_display PUBLIC SDL2::SDL2-static)
     else()
-        find_package(PkgConfig QUIET)
-
-        if(PkgConfig_FOUND)
-            pkg_check_modules(SDL2 QUIET IMPORTED_TARGET sdl2)
-        endif()
-
-        if(TARGET PkgConfig::SDL2)
-            target_link_libraries(rosakasa_display PUBLIC PkgConfig::SDL2)
-        elseif(ROSAKASA_FETCH_SDL2)
-            include(FetchContent)
-
-            FetchContent_Declare(
-                SDL2
-                GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-                GIT_TAG release-2.32.8
-            )
-
-            set(SDL_SHARED ON CACHE BOOL "" FORCE)
-            set(SDL_STATIC OFF CACHE BOOL "" FORCE)
-            set(SDL_TEST OFF CACHE BOOL "" FORCE)
-
-            FetchContent_MakeAvailable(SDL2)
-
-            target_link_libraries(rosakasa_display PUBLIC SDL2::SDL2)
-        else()
-            message(FATAL_ERROR "SDL2 was not found. Install SDL2 or configure with -DROSAKASA_FETCH_SDL2=ON.")
-        endif()
+        message(FATAL_ERROR "SDL2 was not found. Install SDL2 or configure with -DROSAKASA_FETCH_SDL2=ON.")
     endif()
 endif()

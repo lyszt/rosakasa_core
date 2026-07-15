@@ -265,6 +265,7 @@ bool rosakasa_display_present(RosakasaDisplay *display)
     SDL_RenderPresent(display->renderer);
     return true;
 }
+
 /**
  * Return the last error captured by this display backend.
  */
