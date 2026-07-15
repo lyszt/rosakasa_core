@@ -1,14 +1,14 @@
 # rosakasa_core
 
-Skeleton C framebuffer engine with a PC SDL2 demo host.
+Skeleton C framebuffer engine with a demo cartridge and PC SDL2 host.
 
 ## Layout
 
 ```text
 include/rosakasa/display/   Public framebuffer/display API
+demo/                       Demo cartridge setup/update and drawing code
+host/pc/                    PC executable that wires engine to demo cartridge
 src/engine/                 Engine lifecycle and SDL display backend
-src/cartridge/              Cartridge setup/update and software drawing
-src/demo/                   PC executable that wires engine to cartridge
 ```
 
 ## Native PC

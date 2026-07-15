@@ -1,5 +1,5 @@
 #include "engine/engine.h"
-#include "cartridge/cartridge.h"
+#include "demo/demo.h"
 
 #include <SDL.h>
 

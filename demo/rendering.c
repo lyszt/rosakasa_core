@@ -1,4 +1,4 @@
-#include "cartridge/rendering.h"
+#include "demo/rendering.h"
 
 #include <stdbool.h>
 #include <stddef.h>

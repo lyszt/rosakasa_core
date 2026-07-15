@@ -9,7 +9,7 @@ set(CMAKE_C_EXTENSIONS OFF)
 option(ROSAKASA_FETCH_SDL2 "Download SDL2 with FetchContent when SDL2 is not installed locally" ON)
 
 add_library(rosakasa_display
-    src/engine/display/sdl_display.c
+    src/engine/display/display.c
 )
 
 add_library(rosakasa::display ALIAS rosakasa_display)
@@ -38,29 +38,30 @@ target_link_libraries(rosakasa_engine
         rosakasa::display
 )
 
-add_library(rosakasa_cartridge
-    src/cartridge/cartridge.c
-    src/cartridge/rendering.c
+add_library(rosakasa_demo_cartridge
+    demo/demo.c
+    demo/rendering.c
 )
 
-target_include_directories(rosakasa_cartridge
+target_include_directories(rosakasa_demo_cartridge
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-add_executable(rosakasa_demo
-    src/demo/main.c
+add_executable(rosakasa_pc_host
+    host/pc/main.c
 )
 
-target_include_directories(rosakasa_demo
+target_include_directories(rosakasa_pc_host
     PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(rosakasa_demo
+target_link_libraries(rosakasa_pc_host
     PRIVATE
         rosakasa_engine
-        rosakasa_cartridge
+        rosakasa_demo_cartridge
         rosakasa::display
 )
 
