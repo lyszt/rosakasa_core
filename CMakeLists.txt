@@ -38,9 +38,13 @@ target_link_libraries(rosakasa_engine
         rosakasa::display
 )
 
+file(GLOB_RECURSE ROSAKASA_DEMO_CARTRIDGE_SOURCES CONFIGURE_DEPENDS
+    demo/src/*.c
+)
+
 add_library(rosakasa_demo_cartridge
     demo/demo.c
-    demo/rendering.c
+    ${ROSAKASA_DEMO_CARTRIDGE_SOURCES}
 )
 
 target_include_directories(rosakasa_demo_cartridge
