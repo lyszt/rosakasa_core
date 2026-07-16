@@ -53,14 +53,10 @@ void draw_line(Framebuffer *framebuffer, Point start, Point end, uint8_t intensi
 }
 
 // A square has 4 sides, but its total area is always x² so x*x
-// A square starts somewhere and ends somewhere so we need x and y ( a starting point, origin point )
-void draw_square(Framebuffer *framebuffer, Point origin, int length, uint8_t intensity)
+void draw_square(Framebuffer *framebuffer, Point center, int length, uint8_t intensity)
 {
-    int x = origin.x;
-    int y = origin.y;
-
-    // How do you get the four corners of a cube mathematically? Probably by using its diagonals
-    // From x, y
+    int x = center.x - length / 2;
+    int y = center.y - length / 2;
 
     for (int row = y; row < y + length; row++) {
         draw_line(framebuffer, (Point){x, row}, (Point){x + length - 1, row}, intensity);

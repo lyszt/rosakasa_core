@@ -48,7 +48,7 @@ Drawing helpers take a `Framebuffer *`, so call sites do not need to repeat scre
 
 ```c
 draw_line(&demo_framebuffer, (Point){20, 20}, (Point){300, 220}, 220);
-draw_square(&demo_framebuffer, origin, length, 255);
+draw_square(&demo_framebuffer, center, length, 255);
 ```
 
 Screen coordinates start at the top-left:
@@ -69,14 +69,4 @@ Point screen_center = {
 };
 ```
 
-`draw_square` treats its `origin` as the square's top-left corner. To center a square, convert the center point into an origin first:
-
-```c
-static Point square_origin_from_center(Point center, int length)
-{
-    return (Point){
-        center.x - length / 2,
-        center.y - length / 2,
-    };
-}
-```
+`draw_square` treats its `Point` argument as the square's center.

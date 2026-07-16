@@ -18,6 +18,6 @@ typedef struct {
 void draw_pixel(Framebuffer *framebuffer, Point point, uint8_t intensity);
 void draw_line(Framebuffer *framebuffer, Point start, Point end, uint8_t intensity);
 void fill_colors(Framebuffer *framebuffer, uint8_t intensity);
-void draw_square(Framebuffer *framebuffer, Point origin, int length, uint8_t intensity);
+void draw_square(Framebuffer *framebuffer, Point center, int length, uint8_t intensity);
 
 #endif
