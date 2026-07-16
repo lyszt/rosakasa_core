@@ -12,9 +12,9 @@
 #endif
 
 static Framebuffer demo_framebuffer = {
-    .width = 320,
+    .width = 240,
     .height = 240,
-    .pitch_bytes = 320,
+    .pitch_bytes = 240,
     .pixels = NULL,
 };
 
@@ -36,7 +36,7 @@ void update(void)
 
     fill_colors(&demo_framebuffer, 100);
 
-    draw_line(&demo_framebuffer, (Point){20, 20}, (Point){300, 220}, 220);
+    draw_line(&demo_framebuffer, (Point){20, 20}, (Point){220, 220}, 220);
 
     int square_length = 100;
     draw_square(&demo_framebuffer, screen_center, square_length, 255);

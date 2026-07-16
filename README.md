@@ -51,7 +51,7 @@ typedef struct {
 Drawing helpers take a `Framebuffer *`, so call sites do not need to repeat screen dimensions:
 
 ```c
-draw_line(&demo_framebuffer, (Point){20, 20}, (Point){300, 220}, 220);
+draw_line(&demo_framebuffer, (Point){20, 20}, (Point){220, 220}, 220);
 draw_square(&demo_framebuffer, center, length, 255);
 ```
 
@@ -64,7 +64,7 @@ Screen coordinates start at the top-left:
 y increases
 ```
 
-For the default `320x240` framebuffer, the screen center is:
+For the default `240x240` framebuffer, the screen center is:
 
 ```c
 Point screen_center = {

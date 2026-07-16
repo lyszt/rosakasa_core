@@ -58,7 +58,7 @@ bool rosakasa_display_create(const RosakasaDisplayConfig *config, RosakasaDispla
 {
     RosakasaDisplay *created = NULL;
     const char *title = "Rosakasa";
-    uint32_t width = 320;
+    uint32_t width = 240;
     uint32_t height = 240;
     uint32_t scale = 2;
 

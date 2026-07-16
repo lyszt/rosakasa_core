@@ -20,7 +20,7 @@ bool rosakasa_engine_create(RosakasaEngine **engine)
     RosakasaEngine *created = NULL;
     RosakasaDisplayConfig display_config = {
         .title = "Rosakasa",
-        .width = 320,
+        .width = 240,
         .height = 240,
         .scale = 2,
     };
