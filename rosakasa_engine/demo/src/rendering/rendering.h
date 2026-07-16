@@ -15,6 +15,7 @@ typedef struct {
     int pitch_bytes;
 } Framebuffer;
 
+void draw_pixel_local(Framebuffer *framebuffer, Point point, uint8_t intensity);
 void draw_pixel(Framebuffer *framebuffer, Point point, uint8_t intensity);
 void draw_line(Framebuffer *framebuffer, Point start, Point end, uint8_t intensity);
 void fill_colors(Framebuffer *framebuffer, uint8_t intensity);

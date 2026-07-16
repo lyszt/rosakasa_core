@@ -26,6 +26,8 @@ target_compile_definitions(rosakasa_display
 
 add_library(rosakasa_engine
     src/engine/engine.c
+    src/engine/http/http.c
+    src/engine/websocket/websocket.c
 )
 
 target_include_directories(rosakasa_engine
@@ -52,6 +54,16 @@ target_include_directories(rosakasa_demo_cartridge
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+add_library(rosakasa_pc_websocket
+    host/pc/websocket_client.c
+)
+
+target_include_directories(rosakasa_pc_websocket
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
 add_executable(rosakasa_pc_host
     host/pc/main.c
 )
@@ -66,6 +78,7 @@ target_link_libraries(rosakasa_pc_host
     PRIVATE
         rosakasa_engine
         rosakasa_demo_cartridge
+        rosakasa_pc_websocket
         rosakasa::display
 )
 

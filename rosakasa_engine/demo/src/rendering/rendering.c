@@ -1,10 +1,7 @@
 #include "demo/src/rendering/rendering.h"
+#include "demo/src/requests/requests.h"
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdlib.h>
-
-void draw_pixel(Framebuffer *framebuffer, Point point, uint8_t intensity)
+void draw_pixel_local(Framebuffer *framebuffer, Point point, uint8_t intensity)
 {
     if (framebuffer == NULL || framebuffer->pixels == NULL) {
         return;
@@ -17,50 +14,23 @@ void draw_pixel(Framebuffer *framebuffer, Point point, uint8_t intensity)
     framebuffer->pixels[(point.y * framebuffer->pitch_bytes) + point.x] = intensity;
 }
 
+void draw_pixel(Framebuffer *framebuffer, Point point, uint8_t intensity)
+{
+    (void)framebuffer;
+    (void)requests_add_pixel(point, intensity);
+}
+
 void draw_line(Framebuffer *framebuffer, Point start, Point end, uint8_t intensity)
 {
-    int x0 = start.x;
-    int y0 = start.y;
-    int x1 = end.x;
-    int y1 = end.y;
-    int dx = abs(x1 - x0);
-    int dy = -abs(y1 - y0);
-    int sx = (x0 < x1) ? 1 : -1;
-    int sy = (y0 < y1) ? 1 : -1;
-    int error = dx + dy;
-
-    while (true) {
-        int e2;
-
-        draw_pixel(framebuffer, (Point){x0, y0}, intensity);
-
-        if (x0 == x1 && y0 == y1) {
-            break;
-        }
-
-        e2 = 2 * error;
-
-        if (e2 >= dy) {
-            error += dy;
-            x0 += sx;
-        }
-
-        if (e2 <= dx) {
-            error += dx;
-            y0 += sy;
-        }
-    }
+    (void)framebuffer;
+    (void)requests_add_line(start, end, intensity);
 }
 
 // A square has 4 sides, but its total area is always x² so x*x
 void draw_square(Framebuffer *framebuffer, Point center, int length, uint8_t intensity)
 {
-    int x = center.x - length / 2;
-    int y = center.y - length / 2;
-
-    for (int row = y; row < y + length; row++) {
-        draw_line(framebuffer, (Point){x, row}, (Point){x + length - 1, row}, intensity);
-    }
+    (void)framebuffer;
+    (void)requests_add_square(center, length, intensity);
 }
 
 void fill_colors(Framebuffer *framebuffer, uint8_t intensity)

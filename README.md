@@ -21,7 +21,7 @@ include/rosakasa/display/   Public framebuffer/display API
 demo/                       Demo cartridge setup/update entrypoint
 demo/src/                   Demo cartridge rendering helpers and sources
 host/pc/                    PC executable that wires engine to demo cartridge
-src/engine/                 Engine lifecycle and SDL display backend
+src/engine/                 Engine lifecycle, HTTP/WebSocket packages, and SDL display backend
 ```
 
 Demo cartridge sources under `demo/src/` are picked up automatically by CMake.
@@ -34,6 +34,48 @@ make run
 ```
 
 If SDL2 is not installed locally, CMake downloads SDL2 with FetchContent by default.
+
+## Engine Configuration
+
+`rosakasa_engine` owns package configuration through `RosakasaEngineConfig`.
+The HTTP and WebSocket packages are present but disabled by default until an
+embedded or PC backend is attached:
+
+```c
+RosakasaEngineConfig config = rosakasa_engine_default_config();
+
+config.websocket.enabled = true;
+config.websocket.host = "192.168.1.10";
+config.websocket.path = "/socket";
+config.websocket.port = 80;
+config.websocket.use_tls = false;
+config.websocket.send = platform_websocket_send;
+config.websocket.user_data = platform_websocket;
+
+rosakasa_engine_create_with_config(&config, &engine);
+```
+
+The engine-facing send API is backend-neutral:
+
+```c
+RosakasaWebSocket *websocket = rosakasa_engine_websocket(engine);
+
+rosakasa_websocket_send_text(websocket, "{\"type\":\"ping\"}");
+```
+
+The configured `send` callback is responsible for the actual platform transport
+and WebSocket frame write. On PC that can be backed by a native WebSocket
+library; on ESP32 it can be backed by the ESP-IDF WebSocket client.
+
+The PC host includes a basic `ws://` backend. Enable it with environment
+variables before running:
+
+```sh
+ROSAKASA_WS_HOST=127.0.0.1 ROSAKASA_WS_PORT=4000 ROSAKASA_WS_PATH=/socket make run
+```
+
+`ROSAKASA_WS_TLS=1` is reserved for `wss://`, but the PC backend does not support
+TLS yet.
 
 ## Demo Drawing
 
