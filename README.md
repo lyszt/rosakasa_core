@@ -1,4 +1,8 @@
+
+
+
 # rosakasa_core
+https://github.com/user-attachments/assets/18a72594-45dd-4b0d-9f0f-6e23a3c82cbe
 
 Skeleton C framebuffer engine with a demo cartridge and PC SDL2 host.
 
