@@ -14,6 +14,16 @@ defmodule Rosakasa.Rendering do
 
   @type point :: {integer(), integer()} | %{x: integer(), y: integer()}
   @type pixel :: %{type: String.t(), x: integer(), y: integer(), intensity: 0..255}
+  @type span :: %{
+          type: String.t(),
+          y: integer(),
+          x_start: integer(),
+          x_end: integer(),
+          intensity: 0..255
+        }
+
+  @screen_width 240
+  @screen_height 240
 
   @spec draw_pixel(point(), integer()) :: pixel()
   def draw_pixel(point, intensity) do
@@ -27,32 +37,55 @@ defmodule Rosakasa.Rendering do
     }
   end
 
-  @spec draw_line(point(), point(), integer()) :: [pixel()]
+  @spec draw_span(integer(), integer(), integer(), integer()) :: span()
+  def draw_span(y, x_start, x_end, intensity) do
+    {x_start, x_end} =
+      if x_start <= x_end do
+        {x_start, x_end}
+      else
+        {x_end, x_start}
+      end
+
+    %{
+      type: "span",
+      y: y,
+      x_start: x_start,
+      x_end: x_end,
+      intensity: clamp_intensity(intensity)
+    }
+  end
+
+  @spec draw_line(point(), point(), integer()) :: [pixel() | span()]
   def draw_line(start, finish, intensity) do
     {x0, y0} = normalize_point(start)
     {x1, y1} = normalize_point(finish)
 
-    dx = abs(x1 - x0)
-    dy = -abs(y1 - y0)
-    sx = if x0 < x1, do: 1, else: -1
-    sy = if y0 < y1, do: 1, else: -1
+    if y0 == y1 do
+      [draw_span(y0, x0, x1, intensity)]
+    else
+      dx = abs(x1 - x0)
+      dy = -abs(y1 - y0)
+      sx = if x0 < x1, do: 1, else: -1
+      sy = if y0 < y1, do: 1, else: -1
 
-    line_points(x0, y0, x1, y1, dx, dy, sx, sy, dx + dy, intensity, [])
+      line_points(x0, y0, x1, y1, dx, dy, sx, sy, dx + dy, intensity, [])
+      |> pixels_to_spans()
+    end
   end
 
-  @spec draw_square(point(), pos_integer(), integer()) :: [pixel()]
+  @spec draw_square(point(), pos_integer(), integer()) :: [span()]
   def draw_square(center, length, intensity) when length > 0 do
     {center_x, center_y} = normalize_point(center)
     x = center_x - div(length, 2)
     y = center_y - div(length, 2)
 
     y..(y + length - 1)
-    |> Enum.flat_map(fn row ->
-      draw_line({x, row}, {x + length - 1, row}, intensity)
+    |> Enum.map(fn row ->
+      draw_span(row, x, x + length - 1, intensity)
     end)
   end
 
-  @spec render_frame([map()]) :: [pixel()]
+  @spec render_frame([map()]) :: [pixel() | span()]
   def render_frame(commands) when is_list(commands) do
     Enum.flat_map(commands, &render_command/1)
   end
@@ -61,9 +94,9 @@ defmodule Rosakasa.Rendering do
   def render_frame_binary(commands) when is_list(commands) do
     commands
     |> render_frame()
-    |> Enum.map(fn %{x: x, y: y, intensity: intensity} ->
-      <<clamp_byte(x), clamp_byte(y), clamp_byte(intensity)>>
-    end)
+    |> Enum.flat_map(&shape_to_spans/1)
+    |> Enum.flat_map(&clip_span/1)
+    |> Enum.map(&span_to_binary/1)
     |> IO.iodata_to_binary()
   end
 
@@ -121,6 +154,58 @@ defmodule Rosakasa.Rendering do
   end
 
   defp render_command(_command), do: []
+
+  defp shape_to_spans(%{type: "span"} = span), do: [span]
+  defp shape_to_spans(%{type: "pixel"} = pixel), do: pixels_to_spans([pixel])
+
+  defp span_to_binary(%{y: y, x_start: x_start, x_end: x_end, intensity: intensity}) do
+    <<clamp_byte(y), clamp_byte(x_start), clamp_byte(x_end), clamp_byte(intensity)>>
+  end
+
+  defp clip_span(%{y: y}) when y < 0 or y >= @screen_height, do: []
+
+  defp clip_span(%{x_start: x_start, x_end: x_end}) when x_end < 0 or x_start >= @screen_width do
+    []
+  end
+
+  defp clip_span(span) do
+    [
+      %{
+        span
+        | x_start: max(span.x_start, 0),
+          x_end: min(span.x_end, @screen_width - 1)
+      }
+    ]
+  end
+
+  defp pixels_to_spans([]), do: []
+
+  defp pixels_to_spans(pixels) do
+    pixels
+    |> Enum.group_by(fn %{y: y, intensity: intensity} -> {y, intensity} end, & &1.x)
+    |> Enum.flat_map(fn {{y, intensity}, xs} ->
+      xs
+      |> Enum.uniq()
+      |> Enum.sort()
+      |> xs_to_spans(y, intensity)
+    end)
+    |> Enum.sort_by(fn %{y: y, x_start: x_start} -> {y, x_start} end)
+  end
+
+  defp xs_to_spans([], _y, _intensity), do: []
+
+  defp xs_to_spans([x | xs], y, intensity) do
+    {spans, start, finish} =
+      Enum.reduce(xs, {[], x, x}, fn next_x, {spans, start, finish} ->
+        if next_x == finish + 1 do
+          {spans, start, next_x}
+        else
+          {[draw_span(y, start, finish, intensity) | spans], next_x, next_x}
+        end
+      end)
+
+    Enum.reverse([draw_span(y, start, finish, intensity) | spans])
+  end
 
   defp line_points(x0, y0, x1, y1, dx, dy, sx, sy, error, intensity, pixels) do
     pixels = [draw_pixel({x0, y0}, intensity) | pixels]

@@ -9,24 +9,45 @@ static void *transport_user_data = NULL;
 static unsigned int phoenix_ref = 1;
 static bool phoenix_joined = false;
 static RenderCommand commands[256];
+static RenderCommand cached_commands[256];
+static uint8_t *cached_response = NULL;
+static size_t cached_response_size = 0;
 static unsigned int command_count = 0;
+static unsigned int cached_command_count = 0;
 
 _Static_assert(sizeof(RenderCommand) == 6, "RenderCommand must stay wire-compatible");
 
-static void apply_response(Framebuffer *framebuffer, const uint8_t *response, size_t response_size)
+static void apply_span(Framebuffer *framebuffer, uint8_t y, uint8_t x_start, uint8_t x_end, uint8_t intensity)
 {
-    unsigned int applied = 0;
-
-    if (response_size % 3 != 0) {
+    if (framebuffer == NULL || framebuffer->pixels == NULL) {
         return;
     }
 
-    for (size_t i = 0; i < response_size; i += 3) {
-        draw_pixel_local(framebuffer, (Point){response[i], response[i + 1]}, response[i + 2]);
+    if (y >= framebuffer->height || x_start > x_end || x_end >= framebuffer->width) {
+        return;
+    }
+
+    memset(
+        framebuffer->pixels + (y * framebuffer->pitch_bytes) + x_start,
+        intensity,
+        (size_t)(x_end - x_start + 1)
+    );
+}
+
+static bool apply_response(Framebuffer *framebuffer, const uint8_t *response, size_t response_size)
+{
+    unsigned int applied = 0;
+
+    if (response_size % 4 != 0) {
+        return false;
+    }
+
+    for (size_t i = 0; i < response_size; i += 4) {
+        apply_span(framebuffer, response[i], response[i + 1], response[i + 2], response[i + 3]);
         applied++;
     }
 
-    (void)applied;
+    return applied > 0;
 }
 
 static uint8_t clamp_byte(int value)
@@ -50,6 +71,42 @@ static bool append_command(RenderCommand command)
 
     commands[command_count] = command;
     command_count++;
+    return true;
+}
+
+static bool commands_match_cache(void)
+{
+    if (command_count != cached_command_count) {
+        return false;
+    }
+
+    if (command_count == 0 || cached_response == NULL || cached_response_size == 0) {
+        return false;
+    }
+
+    return memcmp(commands, cached_commands, command_count * sizeof(commands[0])) == 0;
+}
+
+static bool update_cache(const uint8_t *response, size_t response_size)
+{
+    uint8_t *next_response = NULL;
+
+    if (response_size == 0 || command_count == 0) {
+        return false;
+    }
+
+    next_response = malloc(response_size);
+    if (next_response == NULL) {
+        return false;
+    }
+
+    memcpy(cached_commands, commands, command_count * sizeof(commands[0]));
+    memcpy(next_response, response, response_size);
+
+    free(cached_response);
+    cached_response = next_response;
+    cached_response_size = response_size;
+    cached_command_count = command_count;
     return true;
 }
 
@@ -194,9 +251,13 @@ static bool send_event(Framebuffer *framebuffer, const char *event, const uint8_
         return false;
     }
 
-    apply_response(framebuffer, response, received_size);
+    bool applied = apply_response(framebuffer, response, received_size);
+    if (applied) {
+        (void)update_cache(response, received_size);
+    }
+
     free(response);
-    return true;
+    return applied;
 }
 
 void requests_set_transport(RenderRequestFn request, void *user_data)
@@ -255,6 +316,12 @@ bool requests_flush(Framebuffer *framebuffer)
 
     if (command_count == 0) {
         return true;
+    }
+
+    if (commands_match_cache()) {
+        bool applied = apply_response(framebuffer, cached_response, cached_response_size);
+        requests_reset();
+        return applied;
     }
 
     sent = send_event(
