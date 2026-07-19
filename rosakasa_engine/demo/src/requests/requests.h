@@ -12,7 +12,10 @@ typedef enum RenderCommandType {
     RENDER_COMMAND_PIXEL = 1,
     RENDER_COMMAND_LINE = 2,
     RENDER_COMMAND_SQUARE = 3,
+    RENDER_COMMAND_CIRCLE = 4,
+    RENDER_COMMAND_CLEAR = 5,
 } RenderCommandType;
+
 
 typedef struct RenderCommand {
     uint8_t type;
@@ -28,6 +31,8 @@ void requests_reset(void);
 bool requests_add_pixel(Point point, uint8_t intensity);
 bool requests_add_line(Point start, Point end, uint8_t intensity);
 bool requests_add_square(Point center, int length, uint8_t intensity);
+bool requests_add_circle(Point center, int area, uint8_t intensity);
+bool requests_add_clear(uint8_t intensity);
 bool requests_flush(Framebuffer *framebuffer);
 
 #endif

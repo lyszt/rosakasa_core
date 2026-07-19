@@ -310,6 +310,30 @@ bool requests_add_square(Point center, int length, uint8_t intensity)
     });
 }
 
+bool requests_add_circle(Point center, int area, uint8_t intensity)
+{
+    return append_command((RenderCommand){
+        .type = RENDER_COMMAND_CIRCLE,
+        .a = clamp_byte(center.x),
+        .b = clamp_byte(center.y),
+        .c = clamp_byte(area),
+        .d = 0,
+        .intensity = intensity,
+    });
+}
+
+bool requests_add_clear(uint8_t intensity)
+{
+    return append_command((RenderCommand){
+        .type = RENDER_COMMAND_CLEAR,
+        .a = 0,
+        .b = 0,
+        .c = 0,
+        .d = 0,
+        .intensity = intensity,
+    });
+}
+
 bool requests_flush(Framebuffer *framebuffer)
 {
     bool sent = false;

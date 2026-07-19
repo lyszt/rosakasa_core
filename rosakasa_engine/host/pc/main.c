@@ -127,6 +127,7 @@ int main(void)
 
     while (is_running) {
         update();
+        commit();
         is_running = rosakasa_engine_tick(engine);
         SDL_Delay(16);
     }

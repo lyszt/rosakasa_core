@@ -17,5 +17,6 @@ typedef bool (*RenderRequestFn)(
 void setup(uint8_t *shared_memory);
 void setup_requests(RenderRequestFn request, void *user_data);
 void update(void);
+void commit(void);
 
 #endif

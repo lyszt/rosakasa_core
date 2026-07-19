@@ -1,4 +1,4 @@
-defmodule Rosakasa.Rendering do
+defmodule Rosakasa.Rendering.Renderer do
   @moduledoc """
   Pure rendering math for converting shapes into framebuffer pixel commands.
 
@@ -8,7 +8,7 @@ defmodule Rosakasa.Rendering do
 
   defmacro __using__(_opts) do
     quote do
-      import Rosakasa.Rendering
+      import Rosakasa.Rendering.Renderer
     end
   end
 
@@ -73,17 +73,6 @@ defmodule Rosakasa.Rendering do
     end
   end
 
-  @spec draw_square(point(), pos_integer(), integer()) :: [span()]
-  def draw_square(center, length, intensity) when length > 0 do
-    {center_x, center_y} = normalize_point(center)
-    x = center_x - div(length, 2)
-    y = center_y - div(length, 2)
-
-    y..(y + length - 1)
-    |> Enum.map(fn row ->
-      draw_span(row, x, x + length - 1, intensity)
-    end)
-  end
 
   @spec render_frame([map()]) :: [pixel() | span()]
   def render_frame(commands) when is_list(commands) do
@@ -139,7 +128,31 @@ defmodule Rosakasa.Rendering do
     decode_commands(rest, [command | commands])
   end
 
-  defp decode_commands(_invalid, commands), do: Enum.reverse(commands)
+  defp decode_commands(<<4, x, y, radius, _d, intensity, rest::binary>>, commands) do
+    command = %{
+      "type" => "circle",
+      "center" => %{"x" => x, "y" => y},
+      "radius" => radius,
+      "intensity" => intensity
+    }
+
+    decode_commands(rest, [command | commands])
+  end
+
+  defp decode_commands(<<5, _a, _b, _c, _d, intensity, rest::binary>>, commands) do
+    command = %{"type" => "clear", "intensity" => intensity}
+
+    decode_commands(rest, [command | commands])
+  end
+
+  # Unknown opcode: skip its 6-byte frame and keep decoding, rather than
+  # truncating the rest of the frame.
+  defp decode_commands(<<_type, _a, _b, _c, _d, _intensity, rest::binary>>, commands) do
+    decode_commands(rest, commands)
+  end
+
+  # Trailing bytes shorter than one command are ignored.
+  defp decode_commands(_partial, commands), do: Enum.reverse(commands)
 
   defp render_command(%{"type" => "pixel", "point" => point} = command) do
     [draw_pixel(point, Map.get(command, "intensity", 255))]
@@ -150,7 +163,19 @@ defmodule Rosakasa.Rendering do
   end
 
   defp render_command(%{"type" => "square", "center" => center, "length" => length} = command) do
-    draw_square(center, length, Map.get(command, "intensity", 255))
+    Rosakasa.Rendering.Shapes.draw_square(center, length, Map.get(command, "intensity", 255))
+  end
+
+  defp render_command(%{"type" => "circle", "center" => center, "radius" => radius} = command) do
+    Rosakasa.Rendering.Shapes.draw_circle(center, radius, Map.get(command, "intensity", 255))
+  end
+
+  defp render_command(%{"type" => "clear"} = command) do
+    intensity = Map.get(command, "intensity", 255)
+
+    for y <- 0..(@screen_height - 1) do
+      draw_span(y, 0, @screen_width - 1, intensity)
+    end
   end
 
   defp render_command(_command), do: []
@@ -233,9 +258,9 @@ defmodule Rosakasa.Rendering do
     end
   end
 
-  defp normalize_point({x, y}) when is_integer(x) and is_integer(y), do: {x, y}
-  defp normalize_point(%{x: x, y: y}) when is_integer(x) and is_integer(y), do: {x, y}
-  defp normalize_point(%{"x" => x, "y" => y}) when is_integer(x) and is_integer(y), do: {x, y}
+  def normalize_point({x, y}) when is_integer(x) and is_integer(y), do: {x, y}
+  def normalize_point(%{x: x, y: y}) when is_integer(x) and is_integer(y), do: {x, y}
+  def normalize_point(%{"x" => x, "y" => y}) when is_integer(x) and is_integer(y), do: {x, y}
 
   defp clamp_intensity(intensity) when intensity < 0, do: 0
   defp clamp_intensity(intensity) when intensity > 255, do: 255

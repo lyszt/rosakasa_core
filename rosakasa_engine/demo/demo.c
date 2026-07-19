@@ -2,6 +2,7 @@
 
 #include "demo/src/requests/requests.h"
 #include "demo/src/rendering/rendering.h"
+#include "demo/src/animations/animations.h"
 
 #include <stdint.h>
 #include <stddef.h>
@@ -61,13 +62,16 @@ void update(void)
         return;
     }
 
-    fill_colors(&back_framebuffer, 100);
+    // fade_in(&back_framebuffer);
+    draw_circle(&back_framebuffer, screen_center, 30, 100);
+    // draw_line(&back_framebuffer, (Point){20, 20}, (Point){220, 220}, 220);
+    // int square_length = 100;
+    // draw_square(&back_framebuffer, screen_center, square_length, 255);
+}
 
-    draw_line(&back_framebuffer, (Point){20, 20}, (Point){220, 220}, 220);
-
-    int square_length = 100;
-    draw_square(&back_framebuffer, screen_center, square_length, 255);
-
+ROSAKASA_EXPORT("commit")
+void commit(void)
+{
     if (requests_flush(&back_framebuffer)) {
         present_frame();
     }

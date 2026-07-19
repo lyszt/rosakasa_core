@@ -1,9 +1,11 @@
 defmodule RosakasaWeb.EngineChannel do
   use RosakasaWeb, :channel
 
-  alias Rosakasa.Rendering
+  alias Rosakasa.Rendering.Renderer
 
-  @frame_budget_us 1_000
+  # A full-frame CLEAR expands to ~240 background spans on top of the shapes, so
+  # the per-frame rasterization budget is generous enough not to drop those frames.
+  @frame_budget_us 5_000
 
   # 1. The ESP32 connects to this topic
   @impl true
@@ -14,8 +16,8 @@ defmodule RosakasaWeb.EngineChannel do
   @impl true
   def handle_in("render_frame", {:binary, data}, socket) do
     started_at = System.monotonic_time(:microsecond)
-    commands = Rendering.decode_commands(data)
-    spans = Rendering.render_frame_binary(commands)
+    commands = Renderer.decode_commands(data)
+    spans = Renderer.render_frame_binary(commands)
 
     if System.monotonic_time(:microsecond) - started_at > @frame_budget_us do
       {:reply, {:ok, {:binary, <<>>}}, socket}
